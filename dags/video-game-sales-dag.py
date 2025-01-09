@@ -1,20 +1,24 @@
 """
-## Mini projeto de ETL utilizando o Airflow para orquestrar a extração de dados de vendas de jogos de video game.
+## Mini projeto de ETL utilizando o Airflow para orquestrar a extração de data de vendas de jogos de video game.
 """
 
 from airflow.decorators import dag, task
-from datetime import datetime
+from datetime import datetime, timedelta
+from airflow.providers.amazon.aws.transfers.local_to_s3 import LocalFilesystemToS3Operator
 
 import os
 import kagglehub
 import pandas as pd
 
+bucket_name = "mini-projetos-dados"
+key = "data/video-game-sales.parquet"
+
 @dag(
-    start_date=datetime(2024, 1, 1),
-    schedule_interval=None,
+    start_date=datetime(2025, 1, 6),
+    schedule="30 2 6 * *",
     catchup=False,
     doc_md=__doc__,
-    default_args={"owner": "Astro", "retries": 3},
+    default_args={"owner": "Astro", "retries": 3, "retry_delay": timedelta(seconds=30)},
     tags=["video-games", "s3", "soda"],
 )
 def airflow_video_game_sales():
@@ -30,7 +34,38 @@ def airflow_video_game_sales():
 
         return df_video_game_sales
     
-    extract()
+    @task
+    def transform(data: pd.DataFrame):
+        if data.empty:
+            raise ValueError("Sem data para transformar")
+
+        data["title"] = data["title"].dropna()
+        data["release_date"] = data["release_date"].dropna()
+
+        data = data.drop("last_update", axis=1)
+        data = data.loc[
+            (data.publisher != "Unknown") & 
+            (data.developer != "Unknown") & 
+            (data.critic_score > 8)
+        ]
+        
+        file_path = '/tmp/dataframe.parquet'
+        data.to_parquet(file_path, index=False)
+        
+        return file_path
+
+    data = extract()
+    transformed_data = transform(data)
+
+    create_object = LocalFilesystemToS3Operator(
+        task_id="load",
+        filename=transformed_data,
+        dest_key=key,
+        dest_bucket=bucket_name,
+        replace=True,
+    )
+    
+    create_object
 
 airflow_video_game_sales()
 
