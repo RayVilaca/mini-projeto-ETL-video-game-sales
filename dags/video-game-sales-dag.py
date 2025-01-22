@@ -5,13 +5,14 @@
 from airflow.decorators import dag, task
 from datetime import datetime, timedelta
 from airflow.providers.amazon.aws.transfers.local_to_s3 import LocalFilesystemToS3Operator
+from airflow.providers.amazon.aws.operators.s3 import S3CreateBucketOperator
 
 import os
 import kagglehub
 import pandas as pd
+from dotenv import load_dotenv
 
-bucket_name = "mini-projetos-dados"
-key = "data/video-game-sales.parquet"
+load_dotenv()
 
 @dag(
     start_date=datetime(2025, 1, 6),
@@ -57,6 +58,15 @@ def airflow_video_game_sales():
     data = extract()
     transformed_data = transform(data)
 
+    bucket_name = os.getenv("BUCKET_NAME")
+    key = os.getenv("KEY")
+
+    create_bucket = S3CreateBucketOperator(
+        task_id="create_bucket",
+        bucket_name=bucket_name,
+        region_name="us-east-1",
+    )
+
     create_object = LocalFilesystemToS3Operator(
         task_id="load",
         filename=transformed_data,
@@ -65,7 +75,7 @@ def airflow_video_game_sales():
         replace=True,
     )
     
-    create_object
+    create_bucket >> create_object
 
 airflow_video_game_sales()
 
