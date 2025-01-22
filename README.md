@@ -1,48 +1,82 @@
-Overview
-========
+# Projeto ETL de Vendas de Video Games
 
-Welcome to Astronomer! This project was generated after you ran 'astro dev init' using the Astronomer CLI. This readme describes the contents of the project, as well as how to run Apache Airflow on your local machine.
+## Visão Geral
 
-Project Contents
-================
+Este projeto é um pipeline ETL usando Apache Airflow para orquestrar a extração, transformação e carregamento (ETL) de dados de vendas de video games. Os dados são extraídos do Kaggle, transformados para limpar e filtrar os dados, validados usando Soda SQL e, em seguida, carregados em um bucket S3.
 
-Your Astro project contains the following files and folders:
+## Conteúdo do Projeto
 
-- dags: This folder contains the Python files for your Airflow DAGs. By default, this directory includes one example DAG:
-    - `example_astronauts`: This DAG shows a simple ETL pipeline example that queries the list of astronauts currently in space from the Open Notify API and prints a statement for each astronaut. The DAG uses the TaskFlow API to define tasks in Python, and dynamic task mapping to dynamically print a statement for each astronaut. For more on how this DAG works, see our [Getting started tutorial](https://www.astronomer.io/docs/learn/get-started-with-airflow).
-- Dockerfile: This file contains a versioned Astro Runtime Docker image that provides a differentiated Airflow experience. If you want to execute other commands or overrides at runtime, specify them here.
-- include: This folder contains any additional files that you want to include as part of your project. It is empty by default.
-- packages.txt: Install OS-level packages needed for your project by adding them to this file. It is empty by default.
-- requirements.txt: Install Python packages needed for your project by adding them to this file. It is empty by default.
-- plugins: Add custom or community plugins for your project to this file. It is empty by default.
-- airflow_settings.yaml: Use this local-only file to specify Airflow Connections, Variables, and Pools instead of entering them in the Airflow UI as you develop DAGs in this project.
+O projeto Astro contém os seguintes arquivos e pastas:
 
-Deploy Your Project Locally
-===========================
+- **dags**: Esta pasta contém os arquivos Python para as DAGs do Airflow.
+  - `video-game-sales-dag.py`: Este DAG define o pipeline ETL para dados de vendas de video games.
+- **Dockerfile**: Este arquivo contém uma imagem Docker do Astro Runtime versionada que fornece uma experiência diferenciada do Airflow. Se você quiser executar outros comandos ou substituições em tempo de execução, especifique-os aqui.
+- **include**: Esta pasta contém quaisquer arquivos adicionais que você deseja incluir como parte do projeto. Está vazia por padrão.
+- **packages.txt**: Instale pacotes de nível de sistema operacional necessários para o projeto adicionando-os a este arquivo. Está vazio por padrão.
+- **requirements.txt**: Instale pacotes Python necessários para o projeto adicionando-os a este arquivo. Inclui:
+  - `kagglehub`
+  - `python-dotenv`
+  - `apache-airflow-providers-amazon`
+  - `soda-sql`
+- **plugins**: Adicione plugins personalizados ou da comunidade para o projeto neste arquivo. Está vazio por padrão.
+- **airflow_settings.yaml**: Use este arquivo apenas localmente para especificar Conexões, Variáveis e Pools do Airflow em vez de inseri-los na interface do Airflow enquanto você desenvolve DAGs neste projeto.
+- **.env**: Este arquivo contém variáveis de ambiente usadas no projeto, como `BUCKET_NAME` e `KEY`.
 
-1. Start Airflow on your local machine by running 'astro dev start'.
+## Começando
 
-This command will spin up 4 Docker containers on your machine, each for a different Airflow component:
+### Pré-requisitos
 
-- Postgres: Airflow's Metadata Database
-- Webserver: The Airflow component responsible for rendering the Airflow UI
-- Scheduler: The Airflow component responsible for monitoring and triggering tasks
-- Triggerer: The Airflow component responsible for triggering deferred tasks
+- Docker
+- Astro CLI
+- Credenciais da API do Kaggle
 
-2. Verify that all 4 Docker containers were created by running 'docker ps'.
+### Configuração
 
-Note: Running 'astro dev start' will start your project with the Airflow Webserver exposed at port 8080 and Postgres exposed at port 5432. If you already have either of those ports allocated, you can either [stop your existing Docker containers or change the port](https://www.astronomer.io/docs/astro/cli/troubleshoot-locally#ports-are-not-available-for-my-local-airflow-webserver).
+1. **Clone o repositório**:
 
-3. Access the Airflow UI for your local Airflow project. To do so, go to http://localhost:8080/ and log in with 'admin' for both your Username and Password.
+   ```sh
+   git clone git@github.com:RayVilaca/mini-projeto-ETL-video-game-sales.git
+   cd mini-projeto-ETL-video-game-sales
+   ```
 
-You should also be able to access your Postgres Database at 'localhost:5432/postgres'.
+2. **Configure as variáveis de ambiente**:
+   Crie um arquivo [.env](http://_vscodecontentref_/0) no diretório raiz com o seguinte conteúdo:
 
-Deploy Your Project to Astronomer
-=================================
+   ```properties
+   BUCKET_NAME=seu-nome-do-bucket
+   KEY=data/video-game-sales.parquet
+   ```
 
-If you have an Astronomer account, pushing code to a Deployment on Astronomer is simple. For deploying instructions, refer to Astronomer documentation: https://www.astronomer.io/docs/astro/deploy-code/
+3. **Instale as dependências**:
 
-Contact
-=======
+   ```sh
+   pip install -r requirements.txt
+   ```
 
-The Astronomer CLI is maintained with love by the Astronomer team. To report a bug or suggest a change, reach out to our support.
+4. **Inicie o Airflow**:
+
+   ```sh
+   astro dev start
+   ```
+
+5. **Acesse a interface do Airflow**:
+   Abra seu navegador e vá para `http://localhost:8080`. Use as credenciais padrão (`admin`/`admin`) para fazer login.
+
+### Executando o DAG
+
+1. **Dispare o DAG**:
+   Na interface do Airflow, navegue até o DAG `airflow_video_game_sales` e dispare-o manualmente.
+
+2. **Monitore o DAG**:
+   Monitore o progresso do DAG na interface do Airflow. Você pode verificar os logs de cada tarefa para ver informações detalhadas.
+
+## Estrutura do Projeto
+
+- **Extract**: Baixa dados de vendas de video games do Kaggle.
+- **Transform**: Limpa e filtra os dados.
+- **Validate**: Usa Soda SQL para validar a qualidade dos dados.
+- **Load**: Carrega os dados transformados em um bucket S3.
+
+## Contribuindo
+
+Se você quiser contribuir para este projeto, por favor, faça um fork do repositório e crie um pull request com suas alterações.
