@@ -55,27 +55,29 @@ def airflow_video_game_sales():
         
         return file_path
 
+    def load_to_s3(file_path: str):
+        bucket_name = os.getenv("BUCKET_NAME")
+        key = os.getenv("KEY")
+
+        create_bucket = S3CreateBucketOperator(
+            task_id="create_bucket",
+            bucket_name=bucket_name,
+            region_name="us-east-1",
+        )
+
+        create_object = LocalFilesystemToS3Operator(
+            task_id="load",
+            filename=file_path,
+            dest_key=key,
+            dest_bucket=bucket_name,
+            replace=True,
+        )
+        
+        create_bucket >> create_object
+
     data = extract()
     transformed_data = transform(data)
-
-    bucket_name = os.getenv("BUCKET_NAME")
-    key = os.getenv("KEY")
-
-    create_bucket = S3CreateBucketOperator(
-        task_id="create_bucket",
-        bucket_name=bucket_name,
-        region_name="us-east-1",
-    )
-
-    create_object = LocalFilesystemToS3Operator(
-        task_id="load",
-        filename=transformed_data,
-        dest_key=key,
-        dest_bucket=bucket_name,
-        replace=True,
-    )
-    
-    create_bucket >> create_object
+    load_to_s3(transformed_data)
 
 airflow_video_game_sales()
 
